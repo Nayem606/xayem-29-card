@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>29 Card Game - XAYEM XONE</title>
+  <style>
+    /* Reset & base */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0; 
+      background: #0b3d2e;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: white;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: none;
+      background: #ffcc00;
+      color: #222;
+      padding: 0.6em 1.5em;
+      margin: 0.3em;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+      transition: background 0.3s ease;
+      user-select: none;
+    }
+    button:hover:not(:disabled) {
+      background: #e6b800;
+    }
+    button:disabled {
+      background: #666;
+      cursor: default;
+      color: #ccc;
+    }
+
+    /* Splash Screen */
+    #splash {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(160deg,#072,#0b3d2e);
+      padding: 20px;
+      text-align: center;
+    }
+    #splash h1 {
+      font-size: 3rem;
+      margin-bottom: 0.2em;
+      letter-spacing: 0.12em;
+      font-weight: 900;
+    }
+    #splash p {
+      font-size: 1.2rem;
+      margin-bottom: 1.8em;
+      font-weight: 600;
+      color: #ffcc00;
+    }
+
+    /* Main game container */
+    #game {
+      display: none;
+      max-width: 700px;
+      margin: auto;
+      padding: 0 10px 30px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Info & Status bars */
+    #status, #scoreboard, #biddingStatus, #trumpStatus {
+      background: #123c22;
+      padding: 10px 15px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      text-align: center;
+      user-select: none;
+      min-height: 2.4em;
+    }
+    #scoreboard {
+      display: flex;
+      justify-content: space-around;
+      font-size: 1.15rem;
+    }
+
+    /* Player hands area */
+    #yourHand {
+      background: #145a32;
+      padding: 10px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 8px;
+      margin-bottom: 15px;
+      user-select: none;
+    }
+    .card {
+      flex: 0 0 auto;
+      width: 55px;
+      height: 85px;
+      border-radius: 8px;
+      background: white;
+      color: black;
+      font-weight: 700;
+      font-size: 1.3rem;
+      line-height: 1.3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+      user-select: none;
+      position: relative;
+      transition: transform 0.15s ease;
+    }
+    .card.red {
+      color: #d32f2f;
+    }
+    .card.disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
+    .card.playing {
+      cursor: default;
+      box-shadow: 0 0 20px 3px #ffcc00;
+      transform: scale(1.15);
+      z-index: 100;
+    }
+
+    /* Table for trick */
+    #table {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin-bottom: 15px;
+      min-height: 130px;
+    }
+    .playedCard {
+      position: absolute;
+      width: 55px;
+      height: 85px;
+      border-radius: 8px;
+      background: white;
+      color: black;
+      font-weight: 700;
+      font-size: 1.3rem;
+      line-height: 1.3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.7);
+      user-select: none;
+      transition: opacity 0.4s ease;
+    }
+    .playedCard.red {
+      color: #d32f2f;
+    }
+    /* Positions for 4 players on table */
+    #playedYou {
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    #playedPartner {
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    #playedLeft {
+      top: 50%;
+      left: 10px;
+      transform: translateY(-50%);
+    }
+    #playedRight {
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+    }
+    /* Highlight winning trick cards */
+    .winner {
+      box-shadow: 0 0 20px 5px #ffcc00 !important;
+      transition: box-shadow 0.3s ease;
+    }
+
+    /* Bidding buttons */
+    #bidButtons {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    #bidButtons button {
+      min-width: 70px;
+      font-size: 1.1rem;
+      padding: 0.7em 1.2em;
+    }
+
+    /* Trump selection */
+    #trumpButtons {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    #trumpButtons button {
+      min-width: 60px;
+      font-size: 1.5rem;
+      margin: 0 10px;
+      padding: 0.5em 0.8em;
+      border-radius: 50%;
+      line-height: 1;
+      user-select: none;
+    }
+    #trumpButtons button:hover {
+      background: #ffcc00;
+      color: #222;
+    }
+
+    /* Scrollbar hidden on mobile */
+    #yourHand::-webkit-scrollbar {
+      display: none;
+    }
+    #yourHand {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      #yourHand {
+        width: 100vw;
+        padding-left: 10px;
+        padding-right: 10px;
+        gap: 5px;
+      }
+      .card {
+        width: 48px;
+        height: 75px;
+        font-size: 1.1rem;
+      }
+      #table {
+        min-height: 100px;
+      }
+      .playedCard {
+        width: 48px;
+        height: 75px;
+        font-size: 1.1rem;
+      }
+      #bidButtons button {
+        min-width: 60px;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Splash Screen -->
+  <div id="splash">
+    <h1>29 Card</h1>
+    <p>Powered by <strong>XAYEM XONE</strong></p>
+    <button id="startBtn">Tap to Start</button>
+  </div>
+
+  <!-- Main Game -->
+  <div id="game" aria-live="polite" aria-atomic="true">
+    <div id="status" role="status"></div>
+    <div id="scoreboard" aria-label="Scoreboard">
+      <div><strong>Your Team:</strong> <span id="scoreTeamA">0</span> tricks</div>
+      <div><strong>Opponents:</strong> <span id="scoreTeamB">0</span> tricks</div>
+    </div>
+
+    <div id="biddingStatus" aria-live="polite" aria-atomic="true"></div>
+    <div id="bidButtons"></div>
+    <div id="trumpStatus" aria-live="polite" aria-atomic="true"></div>
+    <div id="trumpButtons" style="display:none;"></div>
+
+    <div id="table" aria-label="Card table">
+      <div id="playedPartner" class="playedCard" style="visibility:hidden;"></div>
+      <div id="playedLeft" class="playedCard" style="visibility:hidden;"></div>
+      <div id="playedRight" class="playedCard" style="visibility:hidden;"></div>
+      <div id="playedYou" class="playedCard" style="visibility:hidden;"></div>
+    </div>
+
+    <div id="yourHand" aria-label="Your cards"></div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  // Card deck data
+  const SUITS = ['♠', '♥', '♦', '♣'];
+  const RANKS = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+  // Card values for trick comparison (29 scoring order)
+  const CARD_VALUES = {
+    'J': 8, // highest
+    '9': 7,
+    'A': 6,
+    '10': 5,
+    'K': 4,
+    'Q': 3,
+    '8': 2,
+    '7': 1
+  };
+
+  // Teams: You+P2 (Team A), P3+P4 (Team B)
+  // Player order: You(0), Partner(1), Left(2), Right(3)
+  // Partner is sitting opposite you (player 1)
+  const PLAYER_NAMES = ['You', 'Partner', 'Left Opp', 'Right Opp'];
+
+  // Game state variables
+  let deck = [];
+  let hands = [[], [], [], []]; // 4 players hands
+  let trump = null; // trump suit
+  let highestBid = 14;
+  let highestBidder = -1; // player index
+  let currentBidder = 0;
+  let bids = [-1,-1,-1,-1]; // bids, -1 means pass
+  let phase = 'splash'; // splash, bidding, trump, playing, result
+  let trickNumber = 0;
+  let trickCards = [null,null,null,null]; // cards played this trick
+  let leadPlayer = 0; // who leads trick
+  let tricksWon = [0,0]; // Team A and Team B tricks count
+  let playableCards = [];
+  let isYourTurn = false;
+  let trumpChosen = false;
+
+  // DOM refs
+  const splash = document.getElementById('splash');
+  const startBtn = document.getElementById('startBtn');
+  const game = document.getElementById('game');
+  const status = document.getElementById('status');
+  const scoreboardA = document.getElementById('scoreTeamA');
+  const scoreboardB = document.getElementById('scoreTeamB');
+  const biddingStatus = document.getElementById('biddingStatus');
+  const bidButtons = document.getElementById('bidButtons');
+  const trumpStatus = document.getElementById('trumpStatus');
+  const trumpButtons = document.getElementById('trumpButtons');
+  const yourHandDiv = document.getElementById('yourHand');
+  const playedYou = document.getElementById('playedYou');
+  const playedPartner = document.getElementById('playedPartner');
+  const playedLeft = document.getElementById('playedLeft');
+  const playedRight = document.getElementById('playedRight');
+
+  // Utility Functions
+  function createDeck() {
+    const d = [];
+    for (const s of SUITS) {
+      for (const r of RANKS) {
+        d.push(r + s);
+      }
+    }
+    return d;
+  }
+  function shuffle(array) {
+    for(let i = array.length -1; i>0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [array[i],array[j]]=[array[j],array[i]];
+    }
+  }
+  function cardSuit(card) {
+    return card.slice(-1);
+  }
+  function cardRank(card) {
+    return card.slice(0,-1);
+  }
+  function cardValue(card) {
+    return CARD_VALUES[cardRank(card)] || 0;
+  }
+  // Compare cards in current trump context for trick winner
+  function compareCards(cardA, cardB) {
+    const suitA = cardSuit(cardA);
+    const suitB = cardSuit(cardB);
+    if(suitA === suitB) {
+      return cardValue(cardA) - cardValue(cardB);
+    }
+    if(suitA === trump) return 1;
+    if(suitB === trump) return -1;
+    return 0;
+  }
+  // Check if card is valid to play in current trick
+  function isValidPlay(card, playerIndex) {
+    const suitLed = trickCards.find(c => c !== null) ? cardSuit(trickCards.find(c => c !== null)) : null;
+    if(!suitLed) return true; // lead card any suit
+    if(cardSuit(card) === suitLed) return true; // follow suit
+    // check if player has cards of suitLed
+    if(hands[playerIndex].some(c=>cardSuit(c)===suitLed)) return false;
+    return true;
+  }
+  // Remove card from player's hand
+  function removeCardFromHand(playerIndex, card) {
+    const idx = hands[playerIndex].indexOf(card);
+    if(idx >= 0) hands[playerIndex].splice(idx,1);
+  }
+  // Format card for display with red color for hearts/diamonds
+  function formatCard(card) {
+    const suit = cardSuit(card);
+    const rank = cardRank(card);
+    if(suit === '♥' || suit === '♦') {
+      return `<span class="red">${rank}${suit}</span>`;
+    }
+    return `${rank}${suit}`;
+  }
+  // Delay helper (returns a Promise)
+  function delay(ms) {
+    return new Promise(res => setTimeout(res, ms));
+  }
+
+  // AI Bidding logic: simple evaluation + random choice
+  function evaluateHand(playerIndex) {
+    // Count points for J=3, 9=2, A=1, others=0 (basic)
+    let points = 0;
+    for(const card of hands[playerIndex]) {
+      const rank = cardRank(card);
+      if(rank === 'J') points += 3;
+      else if(rank === '9') points += 2;
+      else if(rank === 'A') points += 1;
+    }
+    return points;
+  }
+  async function aiBid(playerIndex) {
+    await delay(800);
+    if(highestBid >= 28) {
+      bids[playerIndex] = -1; // pass if max bid reached
+      updateBiddingStatus(`${PLAYER_NAMES[playerIndex]} passes.`);
+      return;
+    }
+    const handStrength = evaluateHand(playerIndex);
+    // Bid logic: if handStrength > threshold and higher than current bid, bid +1, else pass
+    if(handStrength > 4 && highestBid < 28) {
+      let bid = highestBid + 1;
+      if(bid > 28) bid = -1;
+      if(bid !== -1) {
+        bids
